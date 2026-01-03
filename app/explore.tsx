@@ -2,9 +2,29 @@ import { Ionicons } from "@expo/vector-icons";
 import { NavigationProp, useNavigation } from "@react-navigation/native";
 
 import axios from "axios";
+import * as Sharing from "expo-sharing";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Dimensions, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import * as FileSystem from "expo-file-system/legacy";
+
+const downloadImage = async (imageUrl: string, fileName: string) => {
+  try {
+    const fileUri = FileSystem.cacheDirectory + fileName;
+
+    // Download directly to cache
+    const { uri } = await FileSystem.downloadAsync(imageUrl, fileUri);
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri);
+    } else {
+      alert("Sharing not available!");
+    }
+  } catch (err) {
+    console.log("Download error:", err);
+  }
+};
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -89,19 +109,23 @@ export default function TabTwoScreen() {
     setPage(nextPage);
     await fetchCharacters(searchText, nextPage);
   };
-
   const renderCharacter = ({ item }: { item: CharacterType }) => (
-    <TouchableOpacity style={styles.characterContainer} onPress={() => navigation.navigate("detail", { id: item.mal_id })}>
-      <View style={styles.characterContainer}>
+    <View style={styles.characterContainer}>
+      <TouchableOpacity onPress={() => navigation.navigate("detail", { id: item.mal_id })}>
         <Image source={{ uri: item.image }} style={styles.image} />
-        <Text style={styles.name}>{item.name}</Text>
-        {item.nicknames.length > 0 && <Text style={styles.nicknames}>({item.nicknames.join(", ")})</Text>}
-        <View style={styles.favContainer}>
-          <Ionicons name="heart" size={18} color="#eb0202ff" />
-          <Text style={styles.favoritesText}>{item.favorites}</Text>
-        </View>
+      </TouchableOpacity>
+      <Text style={styles.name}>{item.name}</Text>
+      {item.nicknames.length > 0 && <Text style={styles.nicknames}>({item.nicknames.join(", ")})</Text>}
+      <View style={styles.favContainer}>
+        <Ionicons name="heart" size={18} color="#eb0202ff" />
+        <Text style={styles.favoritesText}>{item.favorites}</Text>
+
+        {/* Download Button */}
+        <TouchableOpacity style={styles.downloadButton} onPress={() => downloadImage(item.image, `${item.name}.jpg`)}>
+          <Ionicons name="cloud-download" size={25} style={styles.downloadBtn} />
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   if (loading && characters.length === 0) {
@@ -165,4 +189,19 @@ const styles = StyleSheet.create({
   nicknames: { color: "#ccc", fontSize: 14, fontStyle: "italic" },
   favContainer: { flexDirection: "row", alignItems: "center", marginTop: 4 },
   favoritesText: { color: "#eb0202ff", marginLeft: 6 },
+  downloadButton: {
+    marginLeft: 20,
+    padding: 5,
+    backgroundColor: "#eb0202ff",
+    borderRadius: 6,
+    position: "absolute",
+    right: 10,
+    bottom: 0,
+  },
+  downloadBtnContainer: {
+    backgroundColor: "#eb0202ff",
+  },
+  downloadBtn: {
+    color: "#fff",
+  },
 });

@@ -7,7 +7,7 @@ export default function Home() {
     <SafeAreaView style={styles.safeAreaView}>
       <ImageBackground source={require("../assets/images/anipx-bg.jpg")} style={styles.bgImg}>
         <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <Text style={styles.title}>ANIPIX</Text>
+          <Text style={styles.title}>ANISPACE</Text>
           <Text style={styles.subTitle}>Explore and download your favorite anime images.</Text>
           <TouchableOpacity
             style={styles.ctaBtn}
@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#000"
   },
   title: {
-    fontSize: 96,
+    fontSize: 70,
     color: "#eb0202ff",
     fontWeight: 500,
   },

@@ -1,11 +1,29 @@
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
+import * as FileSystem from "expo-file-system/legacy";
 import { Stack, useLocalSearchParams } from "expo-router";
+import * as Sharing from "expo-sharing";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
+const downloadImage = async (imageUrl: string, fileName: string) => {
+  try {
+    const fileUri = FileSystem.cacheDirectory + fileName;
+
+    // Download directly to cache
+    const { uri } = await FileSystem.downloadAsync(imageUrl, fileUri);
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri);
+    } else {
+      alert("Sharing not available!");
+    }
+  } catch (err) {
+    console.log("Download error:", err);
+  }
+};
 type CharacterType = {
   mal_id: number;
   name: string;
@@ -73,7 +91,12 @@ export default function DetailScreen() {
       <ScrollView style={styles.scroll}>
         <Stack.Screen options={{ headerShown: true, title: character?.name || "Detail" }} />
         <View style={styles.container}>
-          <Image source={{ uri: character?.image }} style={styles.image} />
+          <View style={styles.imgContainer}>
+            <Image source={{ uri: character?.image }} style={styles.image} />
+            <TouchableOpacity style={styles.downloadButton} onPress={() => downloadImage(character?.image, `${character?.name}.jpg`)}>
+              <Ionicons name="cloud-download" size={25} style={styles.downloadBtn} />
+            </TouchableOpacity>
+          </View>
           <Text style={styles.name}>{character?.name}</Text>
           <Text style={styles.kanji}>{character?.name_kanji}</Text>
           {character?.nicknames?.length ? <Text style={styles.nicknames}>({character.nicknames.join(", ")})</Text> : null}
@@ -88,7 +111,7 @@ export default function DetailScreen() {
 }
 
 const styles = StyleSheet.create({
-    safeView: {backgroundColor: "#000"},
+  safeView: { backgroundColor: "#000" },
   scroll: { backgroundColor: "#1c1c1c" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1c1c1c" },
   loadingText: { color: "#fff", marginTop: 10 },
@@ -99,4 +122,21 @@ const styles = StyleSheet.create({
   nicknames: { color: "#aaa", fontStyle: "italic", marginBottom: 6 },
   favorites: { color: "#eb0202ff", marginBottom: 12 },
   about: { color: "#ddd", lineHeight: 20 },
+
+  downloadButton: {
+    marginLeft: 20,
+    backgroundColor: "#eb0202ff",
+    borderRadius: 6,
+    position: "absolute",
+    right: 0,
+    bottom: "-8          %",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  downloadBtnContainer: {
+    backgroundColor: "#eb0202ff",
+  },
+  downloadBtn: {
+    color: "#fff",
+  },
 });
