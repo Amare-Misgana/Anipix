@@ -3,6 +3,10 @@
     "name": "anime",
     "slug": "anime",
     "version": "1.0.0",
+    "extra": {
+      "MAL_CLIENT_ID": "552c5df715705ec128c693406b55654f",
+      "MAL_CLIENT_KEY": "f696eb042559a048e1a969a99613069d85e8c3c1c173a81cf5453f52005fabe9"
+    },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "anime",

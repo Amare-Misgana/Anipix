@@ -1,149 +1,168 @@
+import { Ionicons } from "@expo/vector-icons";
+import { NavigationProp, useNavigation } from "@react-navigation/native";
+
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, FlatList, Image, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Dimensions, FlatList, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
-type ImageType = {
-  id: number;
+type CharacterType = {
+  mal_id: number;
+  name: string;
+  name_kanji: string;
+  nicknames: string[];
+  favorites: number;
+  about: string;
+  image: string;
   url: string;
-  rating: string;
-  color_dominate: number[];
-  color_palette: number[][];
-  artist_name: string | null;
-  tags: string[];
-  source_url: string | null;
 };
 
-type SelectedRatingType = {
-  rating: string;
+type RootStackParamList = {
+  Home: undefined;
+  detail: { id: number };
 };
 
 export default function TabTwoScreen() {
-  const [images, setImages] = useState<ImageType[]>([]);
-  const [filteredImages, setFilteredImages] = useState<ImageType[]>([]);
-  const [selctedRating, setSelectedRating] = useState<SelectedRatingType[]>([
-    {
-      rating: "safe",
-    },
-    {
-      rating: "suggestive",
-    },
-    // {
-    //   rating: "explicit"
-    // }
-  ]);
+  const [characters, setCharacters] = useState<CharacterType[]>([]);
+  const [searchText, setSearchText] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [searchText, setSearchText] = useState("");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+  const fetchCharacters = async (search = searchText, pageNumber = 1) => {
+    try {
+      const res = await axios.get("https://api.jikan.moe/v4/characters", {
+        params: {
+          q: search || undefined,
+          limit: 10,
+          page: pageNumber,
+          order_by: "favorites",
+          sort: "desc",
+        },
+      });
+
+      const newChars: CharacterType[] = res.data.data.map((char: any) => ({
+        mal_id: char.mal_id,
+        name: char.name,
+        name_kanji: char.name_kanji,
+        nicknames: char.nicknames,
+        favorites: char.favorites,
+        about: char.about,
+        image: char.images.jpg.image_url,
+        url: char.url,
+      }));
+
+      // Avoid duplicates
+      setCharacters((prev) => {
+        const existingIds = new Set(prev.map((c) => c.mal_id));
+        return [...prev, ...newChars.filter((c) => !existingIds.has(c.mal_id))];
+      });
+
+      setHasNextPage(res.data.pagination.has_next_page);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
-    const ratings = selctedRating.map((r) => r.rating);
-    const filtered = images.filter((img) => ratings.includes(img.rating));
-    setFilteredImages(filtered);
-  }, [selctedRating, images]);
-
-  useEffect(() => {
-    const getImages = async () => {
-      try {
-        const res = await axios.get("https://api.nekosapi.com/v4/images");
-        const data: ImageType[] = await res.data.items;
-        setImages(data);
-      } catch (err) {
-        console.log(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getImages();
+    fetchCharacters("", 1);
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#eb0202ff" />
-        <Text style={{ color: "#fff", marginTop: 10 }}>Loading images...</Text>
-      </View>
-    );
-  }
+  const handleSearchEnter = async () => {
+    setLoading(true);
+    setPage(1);
+    setCharacters([]);
+    await fetchCharacters(searchText, 1);
+  };
 
-  if (!loading && filteredImages.length == 0) {
-    return (
-      <View style={styles.container}>
-        <Text style={{ color: "#fff", marginTop: 10 }}>No Image Found.</Text>
+  const handleLoadMore = async () => {
+    if (!hasNextPage || loadingMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    setPage(nextPage);
+    await fetchCharacters(searchText, nextPage);
+  };
+
+  const renderCharacter = ({ item }: { item: CharacterType }) => (
+    <TouchableOpacity style={styles.characterContainer} onPress={() => navigation.navigate("detail", { id: item.mal_id })}>
+      <View style={styles.characterContainer}>
+        <Image source={{ uri: item.image }} style={styles.image} />
+        <Text style={styles.name}>{item.name}</Text>
+        {item.nicknames.length > 0 && <Text style={styles.nicknames}>({item.nicknames.join(", ")})</Text>}
+        <View style={styles.favContainer}>
+          <Ionicons name="heart" size={18} color="#eb0202ff" />
+          <Text style={styles.favoritesText}>{item.favorites}</Text>
+        </View>
       </View>
+    </TouchableOpacity>
+  );
+
+  if (loading && characters.length === 0) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+          <TextInput style={styles.searchInput} placeholder="Search..." placeholderTextColor="#888" value={searchText} onChangeText={(text) => setSearchText(text)} onSubmitEditing={handleSearchEnter} />
+        </View>
+        <View style={styles.container}>
+          <ActivityIndicator size="large" color="#eb0202ff" />
+          <Text style={{ color: "#fff", marginTop: 10 }}>Loading characters...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
       <View style={styles.searchContainer}>
-        <TextInput style={styles.searchInput} placeholder="Search..." placeholderTextColor="#888" value={searchText} onChangeText={(text) => setSearchText(text)} />
+        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+        <TextInput style={styles.searchInput} placeholder="Search..." placeholderTextColor="#888" value={searchText} onChangeText={(text) => setSearchText(text)} onSubmitEditing={handleSearchEnter} />
       </View>
 
-      <View style={styles.container}>
-        <FlatList
-          data={filteredImages}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.imageContainer}>
-              <Image source={{ uri: item.url }} style={styles.image} />
-              <View style={styles.tagsContainer}>
-                {item.tags.map((tag, index) => (
-                  <Text key={index} style={styles.caption}>
-                    {tag.charAt(0).toUpperCase() + tag.replace(/_/g, " ").slice(1)}
-                  </Text>
-                ))}
-              </View>
-            </View>
-          )}
-        />
-      </View>
+      <FlatList
+        data={characters}
+        keyExtractor={(item) => item.mal_id.toString()}
+        renderItem={renderCharacter}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={loadingMore ? <ActivityIndicator color="#eb0202ff" /> : null}
+        contentContainerStyle={{ padding: 20 }}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
+  safeArea: { flex: 1, backgroundColor: "#000" },
   searchContainer: {
-    
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    gap: 10,
+    backgroundColor: "#000000ff",
   },
   searchInput: {
     color: "white",
+    backgroundColor: "#0f0f0fff",
+    width: "90%",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
   },
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  imageContainer: {
-    width: SCREEN_WIDTH - 40,
-    marginBottom: 30,
-  },
-
-  image: {
-    width: "100%",
-    height: SCREEN_HEIGHT * 0.6, // 60% of screen height
-    resizeMode: "cover",
-    borderRadius: 10,
-  },
-
-  tagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 10,
-  },
-
-  caption: {
-    color: "#fff",
-    fontSize: 14,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 5,
-    marginRight: 6,
-    marginBottom: 6,
-  },
+  searchIcon: { color: "#fff" },
+  container: { flex: 1, justifyContent: "center", alignItems: "center" },
+  characterContainer: { marginBottom: 30 },
+  image: { width: SCREEN_WIDTH - 40, height: SCREEN_HEIGHT * 0.6, borderRadius: 10, resizeMode: "cover" },
+  name: { color: "#fff", fontSize: 18, fontWeight: "bold", marginTop: 10 },
+  nicknames: { color: "#ccc", fontSize: 14, fontStyle: "italic" },
+  favContainer: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+  favoritesText: { color: "#eb0202ff", marginLeft: 6 },
 });

@@ -18,7 +18,9 @@ export default function Home() {
             <Text style={styles.ctaText}>Explore Now</Text>
           </TouchableOpacity>
         </View>
+        <Text style={styles.footer}>AMARE MISGANA</Text>
       </ImageBackground>
+
     </SafeAreaView>
   );
 }
@@ -26,6 +28,7 @@ export default function Home() {
 const styles = StyleSheet.create({
   safeAreaView: {
     flex: 1,
+    backgroundColor: "#000"
   },
   title: {
     fontSize: 96,
@@ -52,4 +55,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "#ff1b1bff",
   },
+  footer: {
+    color: "#ff2626ff",
+    fontWeight: 600,
+    marginBottom: 20,
+  }
 });
