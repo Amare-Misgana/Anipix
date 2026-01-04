@@ -1,14 +1,18 @@
 {
   "expo": {
-    "name": "anime",
+    "name": "AniSpace",
     "slug": "anime",
     "version": "1.0.0",
     "extra": {
       "MAL_CLIENT_ID": "552c5df715705ec128c693406b55654f",
-      "MAL_CLIENT_KEY": "f696eb042559a048e1a969a99613069d85e8c3c1c173a81cf5453f52005fabe9"
+      "MAL_CLIENT_KEY": "f696eb042559a048e1a969a99613069d85e8c3c1c173a81cf5453f52005fabe9",
+      "router": {},
+      "eas": {
+        "projectId": "7c1eb78d-9054-4343-b7a0-bc898d765793"
+      }
     },
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/anispace.png",
     "scheme": "anime",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -24,7 +28,9 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.anime"
+      "package": "com.amare.anispace",
+      "versionCode": 1,
+      "permissions": []
     },
     "web": {
       "output": "static",
